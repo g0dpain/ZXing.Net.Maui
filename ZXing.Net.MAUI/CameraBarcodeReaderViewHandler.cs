@@ -32,10 +32,7 @@ public partial class CameraBarcodeReaderViewHandler : ViewHandler<ICameraBarcode
 	{
 	}
 
-	public event EventHandler<BarcodeDetectionEventArgs> BarcodesDetected;
-	public event EventHandler<CameraFrameBufferEventArgs> FrameReady;
-
-	CameraManager cameraManager;
+		CameraManager cameraManager;
 
 	Readers.IBarcodeReader barcodeReader;
 
@@ -69,23 +66,18 @@ public partial class CameraBarcodeReaderViewHandler : ViewHandler<ICameraBarcode
 		base.DisconnectHandler(nativeView);
 	}
 
-	public override void SetVirtualView(IView view)
-	{
-		base.SetVirtualView(view);
-	}
-
-	private void CameraManager_FrameReady(object sender, CameraFrameBufferEventArgs e)
-	{
-		FrameReady?.Invoke(this, e);
+		private void CameraManager_FrameReady(object sender, CameraFrameBufferEventArgs e)
+		{
+			VirtualView?.FrameReady(e);
 
 		if (VirtualView.IsDetecting)
 		{
 			var barcodes = BarcodeReader.Decode(e.Data);
 
-			if (barcodes?.Any() ?? false)
-				BarcodesDetected?.Invoke(this, new BarcodeDetectionEventArgs(barcodes));
+				if (barcodes?.Any() ?? false)
+					VirtualView?.BarcodesDetected(new BarcodeDetectionEventArgs(barcodes));
+			}
 		}
-	}
 
 	public static void MapOptions(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView)
 		=> handler.BarcodeReader.Options = cameraBarcodeReaderView.Options;

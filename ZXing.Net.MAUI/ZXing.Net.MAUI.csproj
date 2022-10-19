@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net6.0-android;net6.0-maccatalyst;net6.0-ios</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net6.0-windows10.0.19041</TargetFrameworks>
-		<PackageId>ZXing.Net.Maui</PackageId>
+		<PackageId>g0dpain.ZXing.Net.Maui</PackageId>
 		<Title>ZXing.Net.MAUI Barcode Scanner for .NET MAUI</Title>
 		<Authors>Redth</Authors>
 		<UseMaui>True</UseMaui>
@@ -21,6 +21,7 @@
 		<AssemblyFileVersion>$(PackageVersion)</AssemblyFileVersion>
 		<DebugType>portable</DebugType>
 		<IsPackable>true</IsPackable>
+		<Version>1.0.2</Version>
 	</PropertyGroup>
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0-android'">
 		<PackageReference Include="Xamarin.AndroidX.Camera.Camera2" Version="1.1.0" />

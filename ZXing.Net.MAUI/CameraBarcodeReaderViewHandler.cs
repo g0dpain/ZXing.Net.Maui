@@ -7,98 +7,104 @@ using Microsoft.Maui.Handlers;
 
 namespace ZXing.Net.Maui
 {
-	public partial class CameraBarcodeReaderViewHandler : ViewHandler<ICameraBarcodeReaderView, NativePlatformCameraPreviewView>
-	{
-		public static PropertyMapper<ICameraBarcodeReaderView, CameraBarcodeReaderViewHandler> CameraBarcodeReaderViewMapper = new()
-		{
-			[nameof(ICameraBarcodeReaderView.Options)] = MapOptions,
-			[nameof(ICameraBarcodeReaderView.IsDetecting)] = MapIsDetecting,
-			[nameof(ICameraBarcodeReaderView.IsTorchOn)] = (handler, virtualView) => handler.cameraManager.UpdateTorch(virtualView.IsTorchOn),
-			[nameof(ICameraBarcodeReaderView.CameraLocation)] = (handler, virtualView) => handler.cameraManager.UpdateCameraLocation(virtualView.CameraLocation)
-		};
+    public partial class CameraBarcodeReaderViewHandler : ViewHandler<ICameraBarcodeReaderView, NativePlatformCameraPreviewView>
+    {
+        public static PropertyMapper<ICameraBarcodeReaderView, CameraBarcodeReaderViewHandler> CameraBarcodeReaderViewMapper = new()
+        {
+            [nameof(ICameraBarcodeReaderView.Options)] = MapOptions,
+            [nameof(ICameraBarcodeReaderView.IsDetecting)] = MapIsDetecting,
+            [nameof(ICameraBarcodeReaderView.IsTorchOn)] = (handler, virtualView) => handler.cameraManager.UpdateTorch(virtualView.IsTorchOn),
+            [nameof(ICameraBarcodeReaderView.CameraLocation)] = (handler, virtualView) => handler.cameraManager.UpdateCameraLocation(virtualView.CameraLocation)
+        };
 
-		public static CommandMapper<ICameraBarcodeReaderView, CameraBarcodeReaderViewHandler> CameraBarcodeReaderCommandMapper = new()
-		{
-			[nameof(ICameraBarcodeReaderView.Focus)] = MapFocus,
-			[nameof(ICameraBarcodeReaderView.AutoFocus)] = MapAutoFocus,
-		};
+        public static CommandMapper<ICameraBarcodeReaderView, CameraBarcodeReaderViewHandler> CameraBarcodeReaderCommandMapper = new()
+        {
+            [nameof(ICameraBarcodeReaderView.Focus)] = MapFocus,
+            [nameof(ICameraBarcodeReaderView.AutoFocus)] = MapAutoFocus,
+        };
 
-		public CameraBarcodeReaderViewHandler() : base(CameraBarcodeReaderViewMapper)
-		{
-		}
+        public CameraBarcodeReaderViewHandler() : base(CameraBarcodeReaderViewMapper)
+        {
+        }
 
-		public CameraBarcodeReaderViewHandler(PropertyMapper mapper = null) : base(mapper ?? CameraBarcodeReaderViewMapper)
-		{
-		}
+        public CameraBarcodeReaderViewHandler(PropertyMapper mapper = null) : base(mapper ?? CameraBarcodeReaderViewMapper)
+        {
+        }
 
-		CameraManager cameraManager;
+        CameraManager cameraManager;
 
-		Readers.IBarcodeReader barcodeReader;
+        Readers.IBarcodeReader barcodeReader;
 
-		protected Readers.IBarcodeReader BarcodeReader
-			=> barcodeReader ??= Services.GetService<Readers.IBarcodeReader>();
+        protected Readers.IBarcodeReader BarcodeReader
+            => barcodeReader ??= Services.GetService<Readers.IBarcodeReader>();
 
-		protected override NativePlatformCameraPreviewView CreatePlatformView()
-		{
-			if (cameraManager == null)
-				cameraManager = new(MauiContext, VirtualView?.CameraLocation ?? CameraLocation.Rear);
-			var v = cameraManager.CreateNativeView();
-			return v;
-		}
+        protected override NativePlatformCameraPreviewView CreatePlatformView()
+        {
+            if (cameraManager == null)
+                cameraManager = new(MauiContext, VirtualView?.CameraLocation ?? CameraLocation.Rear);
+            var v = cameraManager.CreateNativeView();
+            return v;
+        }
 
-		protected override async void ConnectHandler(NativePlatformCameraPreviewView nativeView)
-		{
-			base.ConnectHandler(nativeView);
+        protected override async void ConnectHandler(NativePlatformCameraPreviewView nativeView)
+        {
+            base.ConnectHandler(nativeView);
 
-			if (await cameraManager.CheckPermissions())
-				cameraManager.Connect();
+            if (await cameraManager.CheckPermissions())
+                cameraManager.Connect();
 
-			cameraManager.FrameReady += CameraManager_FrameReady;
-		}
+            cameraManager.FrameReady += CameraManager_FrameReady;
+        }
 
-		protected override void DisconnectHandler(NativePlatformCameraPreviewView nativeView)
-		{
-			cameraManager.FrameReady -= CameraManager_FrameReady;
+        protected override void DisconnectHandler(NativePlatformCameraPreviewView nativeView)
+        {
+            cameraManager.FrameReady -= CameraManager_FrameReady; 
 
-			cameraManager.Disconnect();
+            if (VirtualView is not null)
+                VirtualView.IsDetecting = false;
 
-			base.DisconnectHandler(nativeView);
-		}
+            cameraManager.Disconnect();
 
-		private void CameraManager_FrameReady(object sender, CameraFrameBufferEventArgs e)
-		{
-			VirtualView?.FrameReady(e);
+            base.DisconnectHandler(nativeView);
+        }
 
-			if (VirtualView.IsDetecting)
-			{
-				var barcodes = BarcodeReader.Decode(e.Data);
+        private void CameraManager_FrameReady(object sender, CameraFrameBufferEventArgs e)
+        {
+            VirtualView?.FrameReady(e);
 
-				if (barcodes?.Any() ?? false)
-					VirtualView?.BarcodesDetected(new BarcodeDetectionEventArgs(barcodes));
-			}
-		}
+            if (VirtualView?.IsDetecting ?? false)
+            {
+                var barcodes = BarcodeReader.Decode(e.Data);
 
-		public static void MapOptions(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView)
-			=> handler.BarcodeReader.Options = cameraBarcodeReaderView.Options;
+                if (barcodes?.Any() ?? false)
+                {
+                    if (VirtualView?.IsDetecting ?? false)
+                        VirtualView?.BarcodesDetected(new BarcodeDetectionEventArgs(barcodes));
+                }
+            }
+        }
 
-		public static void MapIsDetecting(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView)
-		{ }
+        public static void MapOptions(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView)
+            => handler.BarcodeReader.Options = cameraBarcodeReaderView.Options;
 
-		public void Focus(Point point)
-			=> cameraManager?.Focus(point);
+        public static void MapIsDetecting(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView)
+        { }
 
-		public void AutoFocus()
-			=> cameraManager?.AutoFocus();
+        public void Focus(Point point)
+            => cameraManager?.Focus(point);
 
-		public static void MapFocus(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView, object? parameter)
-		{
-			if (parameter is not Point point)
-				throw new ArgumentException("Invalid parameter", "point");
+        public void AutoFocus()
+            => cameraManager?.AutoFocus();
 
-			handler.Focus(point);
-		}
+        public static void MapFocus(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView, object? parameter)
+        {
+            if (parameter is not Point point)
+                throw new ArgumentException("Invalid parameter", "point");
 
-		public static void MapAutoFocus(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView, object? parameters)
-			=> handler.AutoFocus();
-	}
+            handler.Focus(point);
+        }
+
+        public static void MapAutoFocus(CameraBarcodeReaderViewHandler handler, ICameraBarcodeReaderView cameraBarcodeReaderView, object? parameters)
+            => handler.AutoFocus();
+    }
 }

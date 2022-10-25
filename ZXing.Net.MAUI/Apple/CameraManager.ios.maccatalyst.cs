@@ -7,9 +7,7 @@ using CoreFoundation;
 using CoreVideo;
 using Foundation;
 using UIKit;
-using Microsoft.Maui;
 using MSize = Microsoft.Maui.Graphics.Size;
-using ZXing.Net.Maui.Controls;
 using Microsoft.Maui.Graphics;
 
 namespace ZXing.Net.Maui;
